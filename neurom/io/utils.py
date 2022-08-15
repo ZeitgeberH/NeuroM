@@ -120,7 +120,7 @@ def _get_file(stream, extension):
     return temp_file
 
 
-def load_morphology(morph, reader=None):
+def load_morphology(morph, reader=None, somaType=None):
     """Build section trees from a morphology or a h5, swc or asc file.
 
     Args:
@@ -134,6 +134,9 @@ def load_morphology(morph, reader=None):
               must be passed with the corresponding file format (asc, swc and h5)
         reader (str): Optional, must be provided if morphology is a stream to
                       specify the file format (asc, swc, h5)
+        somaType: Optional,if None, infer from data. Otherwise it needs to be one of the format supported by
+                morphio.SomaType: (SOMA_SINGLE_POINT,SOMA_CYLINDERS,SOMA_NEUROMORPHO_THREE_POINT_CYLINDERS,
+                SOMA_SIMPLE_CONTOUR, SOMA_UNDEFINED)
 
     Returns:
         A Morphology object
@@ -162,7 +165,7 @@ def load_morphology(morph, reader=None):
     if reader:
         return Morphology(_get_file(morph, reader))
 
-    return Morphology(morph, Path(morph).name)
+    return Morphology(morph, Path(morph).name,somaType)
 
 
 def load_neuron(morph, reader=None):

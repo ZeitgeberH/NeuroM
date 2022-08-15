@@ -310,7 +310,7 @@ class SomaSimpleContour(Soma):
         return interior_side
 
 
-def make_soma(morphio_soma):
+def make_soma(morphio_soma, somaType=None):
     """Make a soma object from a MorphIO soma.
 
     Args:
@@ -324,7 +324,11 @@ def make_soma(morphio_soma):
         SomaType.SOMA_UNDEFINED: Soma,
     }
 
-    builder = soma_builders.get(morphio_soma.type)
+    if somaType is None:
+        builder = soma_builders.get(morphio_soma.type)
+    else:
+        builder = soma_builders.get(somaType)
+
     if builder is None:
         raise SomaError(f'No NeuroM constructor for MorphIO soma type: {morphio_soma.type}')
     return builder(morphio_soma)

@@ -425,7 +425,7 @@ class Neurite:
 class Morphology(morphio.mut.Morphology):
     """Class representing a simple morphology."""
 
-    def __init__(self, filename, name=None):
+    def __init__(self, filename, name=None, somaType = None):
         """Morphology constructor.
 
         Args:
@@ -435,7 +435,7 @@ class Morphology(morphio.mut.Morphology):
         super().__init__(filename)
         self.name = name if name else 'Morphology'
         self.morphio_soma = super().soma
-        self.neurom_soma = make_soma(self.morphio_soma)
+        self.neurom_soma = make_soma(self.morphio_soma, somaType)
 
     @property
     def soma(self):
