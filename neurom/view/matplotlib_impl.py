@@ -31,6 +31,7 @@
 from functools import wraps
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
+import matplotlib.offsetbox as offsetbox
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, FancyArrowPatch, Polygon, Rectangle
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
@@ -59,6 +60,28 @@ TREE_COLOR = {NeuriteType.basal_dendrite: 'red',
               NeuriteType.custom9: 'orange',
               NeuriteType.custom10: 'orange'}
 
+class AnchoredHScaleBar(offsetbox.AnchoredOffsetbox):
+    """ size: length of bar in data units
+        extent : height of bar ends in axes units """
+    def __init__(self, size=1, extent = 0.03, label="", loc=2, ax=None,
+                 pad=0.4, borderpad=0.5, ppad = 0, sep=2, prop=None, 
+                 frameon=True, linekw={}, **kwargs):
+        if not ax:
+            ax = plt.gca()
+        trans = ax.get_xaxis_transform()
+        size_bar = offsetbox.AuxTransformBox(trans)
+        line = Line2D([0,size],[0,0], **linekw)
+        vline1 = Line2D([0,0],[-extent/2.,extent/2.], **linekw)
+        vline2 = Line2D([size,size],[-extent/2.,extent/2.], **linekw)
+        size_bar.add_artist(line)
+        size_bar.add_artist(vline1)
+        size_bar.add_artist(vline2)
+        txt = offsetbox.TextArea(label, minimumdescent=False)
+        self.vpac = offsetbox.VPacker(children=[size_bar,txt],  
+                                 align="center", pad=ppad, sep=sep) 
+        offsetbox.AnchoredOffsetbox.__init__(self, loc, pad=pad, 
+                 borderpad=borderpad, child=self.vpac, prop=prop, frameon=frameon,
+                 **kwargs)
 
 def _implicit_ax(plot_func, params=None):
     """Sets ``ax`` arg for plot functions if ``ax`` is not set originally."""
@@ -245,7 +268,9 @@ def plot_morph(morph, ax=None,
         plot_tree(neurite, ax, plane=plane,
                   diameter_scale=diameter_scale, linewidth=linewidth,
                   color=color, alpha=alpha, realistic_diameters=realistic_diameters)
-
+    ob = AnchoredHScaleBar(size=50, extent = 0.01, label="50 um", loc=4, frameon=False,
+                       pad=0.6,sep=4, linekw=dict(color="black"),ax=ax) 
+    ax.add_artist(ob)
     ax.set_title(morph.name)
     ax.set_xlabel(plane[0])
     ax.set_ylabel(plane[1])

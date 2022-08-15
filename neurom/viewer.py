@@ -106,8 +106,16 @@ def draw(obj, mode='2d', **kwargs):
             raise NotImplementedError('Option realistic_diameter not implemented for 3D plots')
         del kwargs['realistic_diameters']
 
-    fig, ax = (matplotlib_utils.get_figure() if mode in ('2d', 'dendrogram')
-               else matplotlib_utils.get_figure(params={'projection': '3d'}))
+    # fig, ax = (matplotlib_utils.get_figure() if mode in ('2d', 'dendrogram')
+    #            else matplotlib_utils.get_figure(params={'projection': '3d'}))
+    if 'ax' not in kwargs:
+        if mode in ('2d', 'dendrogram'):
+            fig, ax = matplotlib_utils.get_figure()
+        else:
+            fig, ax = matplotlib_utils.get_figure(params={'projection': '3d'})
+    else:
+        fig = kwargs.pop('fig', None)
+        ax =  kwargs.pop('ax', None)   
 
     if isinstance(obj, Morphology):
         tag = 'neuron'
