@@ -47,9 +47,9 @@ from scipy.spatial import ConvexHull
 _LINEWIDTH = 1.2
 _ALPHA = 0.8
 _DIAMETER_SCALE = 1.0
-TREE_COLOR = {NeuriteType.basal_dendrite: 'red',
+TREE_COLOR = {NeuriteType.basal_dendrite: 'blue',
               NeuriteType.apical_dendrite: 'purple',
-              NeuriteType.axon: 'blue',
+              NeuriteType.axon: 'red',
               NeuriteType.soma: 'black',
               NeuriteType.undefined: 'green',
               NeuriteType.custom5: 'orange',
@@ -211,12 +211,6 @@ def plot_soma(soma, ax=None, plane='xy',
     plane0, plane1 = _plane2col(plane)
     color = _get_color(color, tree_type=NeuriteType.soma)
     if isinstance(soma, SomaCylinders):
-        # for start, end in zip(soma.points, soma.points[1:]):
-        #     matplotlib_utils.project_cylinder_onto_2d(
-        #         ax, (plane0, plane1),
-        #         start=start[COLS.XYZ], end=end[COLS.XYZ],
-        #         start_radius=start[COLS.R], end_radius=end[COLS.R],
-        #         color=color, alpha=alpha)
         plane0, plane1 = _plane2col(plane)
         points = np.vstack([soma.points[:,plane0].ravel(),
                             soma.points[:,plane1].ravel()])
