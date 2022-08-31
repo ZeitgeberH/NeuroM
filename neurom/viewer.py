@@ -46,6 +46,7 @@ from neurom.view import matplotlib_utils
 from neurom.core.morphology import Section, Neurite, Morphology
 from neurom.core.soma import Soma
 from neurom.utils import deprecated_module
+from neurom.io.multiSomas import MultiSoma
 
 deprecated_module('Module `viewer` is deprecated. See the documentation\'s migration page.')
 
@@ -59,7 +60,8 @@ _VIEWERS = {
     'tree_2d': plot_tree,
     'tree_dendrogram': plot_dendrogram,
     'soma_3d': plot_soma3d,
-    'soma_2d': plot_soma
+    'soma_2d': plot_soma,
+    'multi-somas_2d': MultiSoma.drawHulls
 }
 
 
@@ -121,6 +123,8 @@ def draw(obj, mode='2d', **kwargs):
         tag = 'tree'
     elif isinstance(obj, Soma):
         tag = 'soma'
+    elif isinstance(obj, MultiSoma):
+        tag = 'multi-somas'
     else:
         raise NotDrawableError('draw not implemented for %s' % obj.__class__)
 

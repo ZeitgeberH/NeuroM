@@ -25,19 +25,34 @@ class MultiSoma(object):
                 self.soma_hulls.append(convex_hull(points))
             else: ## ignore this part for now
                 self.custom_data.append(rdw_)
-
-    def getDistMatrix(self):
-        ''' measure inter-soma distance
+    @classmethod
+    def getDistMatrix(self, centers):
+        ''' measure pair-wise inter-soma distance
+        centers: dict with keys: X, Y, Z
         '''
-        raise NotImplementedError
+        distanceList = []
+        if len(centers["X"]) > 1:## calculte distance between cells 
+            x0, y0, z0 = centers["X"][-1], centers["Y"][-1], centers["Z"][-1]
+            for kkk, _ in enumerate(centers["X"][:-1]):
+                d = np.round(
+                    np.sqrt(
+                        (centers["X"][kkk] - x0) ** 2
+                        + (centers["Y"][kkk] - y0) ** 2
+                        + (centers["Z"][kkk] - z0) ** 2
+                    ),
+                    1,
+                )
+                distanceList.append(d)
+        return distanceList
 
-    def drawHulls(self, ax=None, contourColor='k',alpha=0.2, fill=True,faceColor='g', linewidth=2):
+    def drawHulls(self, ax=None, contour_color='k',alpha=0.2, fill=True,\
+        contour_on=True, faceColor='g', contour_linewidth=2):
         if ax is None:
             fig, ax = plt.subplots()
         if fill:
             for points, hull in zip(self.pop_neurons, self.soma_hulls):        
                 ax.add_patch(Polygon(points[hull.vertices,:2], fill=True, color=faceColor, alpha=alpha))
         for n1, h1 in zip(self.pop_neurons, self.soma_hulls):
-            ax.plot(n1[h1.vertices,0], n1[h1.vertices,1], color=contourColor, linestyle='--', lw=linewidth)
+            ax.plot(n1[h1.vertices,0], n1[h1.vertices,1], color=contour_color, linestyle='--', lw=contour_linewidth)
 
 

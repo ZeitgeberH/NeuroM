@@ -27,7 +27,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """Reader for Neurolucida .ASC files, v3, reversed engineered from looking at output from
-Neuroludica
+Neuroludica.
+DeprecationWarning: Only used for reading ASC file with multiple somas. 
 """
 
 import warnings
@@ -297,8 +298,8 @@ def _sections_to_raw_data(sections):
         else:
             neurites.append(neurite)
     assert somas is not None, "Missing CellBody element (ie. soma)"
-    print(f"Found {len(somas)} somas in current file")
-    print(f"Found {len(neurites)} neurite in current file")
+    # print(f"Found {len(somas)} somas in current file")
+    # print(f"Found {len(neurites)} neurite in current file")
     # total_length = len(soma) + sum(len(neurite) for neurite in neurites)
     if len(somas) > 1:
         ret = []

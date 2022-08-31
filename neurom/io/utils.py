@@ -43,7 +43,8 @@ from neurom.core.population import Population
 from neurom.exceptions import NeuroMError
 from neurom.utils import warn_deprecated
 from neurom.io.multiSomas import MultiSoma
-
+from morphio import SomaError
+import warnings
 L = logging.getLogger(__name__)
 
 
@@ -164,8 +165,12 @@ def load_morphology(morph, reader=None, somaType=None):
         return Morphology(morph)
     if reader:
         return Morphology(_get_file(morph, reader))
-
-    return Morphology(morph, Path(morph).name,somaType)
+    try:
+        out = Morphology(morph, Path(morph).name,somaType)
+    except SomaError as se:
+        warnings.warn('Multi-soma error raised! Load with multiple somas!', UserWarning)
+        out = load_multiSoma(morph)
+    return out
 
 
 def load_multiSoma(fname):
