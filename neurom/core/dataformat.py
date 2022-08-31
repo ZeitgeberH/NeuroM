@@ -30,13 +30,15 @@
 
 from collections import namedtuple
 
-_COL_COUNT = 4
+# _COL_COUNT = 4
+_COL_COUNT = 7
 
 
 class COLS:
     """Column labels for internal data representation."""
     COL_COUNT = _COL_COUNT
-    (X, Y, Z, R) = range(_COL_COUNT)
+    # (X, Y, Z, R) = range(_COL_COUNT)
+    (X, Y, Z, R, TYPE, ID, P) = range(_COL_COUNT)
     XY = slice(0, 2)
     XZ = slice(0, 3, 2)
     YZ = slice(1, 3)
@@ -50,3 +52,28 @@ Point = namedtuple('Point', ('x', 'y', 'z', 'r'))
 def as_point(row):
     """Create a Point from a data block row."""
     return Point(row[COLS.X], row[COLS.Y], row[COLS.Z], row[COLS.R])
+
+class POINT_TYPE(object):
+    """Point types.
+
+    These follow SWC specification.
+
+    support for legacy neurolucida reader
+    """
+
+    (
+        UNDEFINED,
+        SOMA,
+        AXON,
+        BASAL_DENDRITE,
+        APICAL_DENDRITE,
+        FORK_POINT,
+        END_POINT,
+        CUSTOM,
+        PIA,
+        WHITEMATTER,
+    ) = range(10)
+
+    NEURITES = (AXON, BASAL_DENDRITE, APICAL_DENDRITE)
+
+ROOT_ID = -1 ## support for legacy neurolucida reader

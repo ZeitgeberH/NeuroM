@@ -245,7 +245,8 @@ def plot_morph(morph, ax=None,
                plane='xy',
                soma_outline=True,
                diameter_scale=_DIAMETER_SCALE, linewidth=_LINEWIDTH,
-               color=None, alpha=_ALPHA, realistic_diameters=False):
+               color=None, alpha=_ALPHA, realistic_diameters=False,scale_bar=True, contour_on=False,
+               contour_linewidth=0.1,contour_color='k'):
     """Plots a 2D figure of the morphology, that contains a soma and the neurites.
 
     Args:
@@ -259,7 +260,16 @@ def plot_morph(morph, ax=None,
         color(str or None): Color of plotted values, None corresponds to default choice
         alpha(float): Transparency of plotted values
         realistic_diameters(bool): scale linewidths with axis data coordinates
+        scale_bar(bool): draw a scalebar. Default:True
+        contour_on(bool): draw contour of slice if any. Default:False.
+        contour_linewidth(float): default 0.1
+        contour_color(str): default 'k'
     """
+    if contour_on: # draw contour if any
+        for idx, x in enumerate(morph.markers):
+            ps = np.array(x.points)
+            ax.plot(ps[:,0],ps[:,1], linewidth=contour_linewidth, linestyle='--',color=contour_color,
+                label='contour_'+str(idx))       
     plot_soma(morph.soma, ax, plane=plane, soma_outline=soma_outline, linewidth=linewidth,
               color=color, alpha=alpha)
 
@@ -267,9 +277,10 @@ def plot_morph(morph, ax=None,
         plot_tree(neurite, ax, plane=plane,
                   diameter_scale=diameter_scale, linewidth=linewidth,
                   color=color, alpha=alpha, realistic_diameters=realistic_diameters)
-    ob = AnchoredHScaleBar(size=50, extent = 0.01, label="50 um", loc=4, frameon=False,
-                       pad=0.6,sep=4, linekw=dict(color="black"),ax=ax) 
-    ax.add_artist(ob)
+    if scale_bar:
+        ob = AnchoredHScaleBar(size=50, extent = 0.01, label="50 um", loc=4, frameon=False,
+                        pad=0.6,sep=4, linekw=dict(color="black"),ax=ax) 
+        ax.add_artist(ob)
     ax.set_title(morph.name)
     ax.set_xlabel(plane[0])
     ax.set_ylabel(plane[1])
