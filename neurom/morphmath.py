@@ -33,7 +33,7 @@ from itertools import combinations
 
 import numpy as np
 from scipy.spatial import ConvexHull
-from scipy.spatial.qhull import QhullError
+from scipy.spatial import QhullError
 from scipy.spatial.distance import cdist
 
 from neurom.core.dataformat import COLS

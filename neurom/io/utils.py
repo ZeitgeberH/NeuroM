@@ -42,10 +42,7 @@ from neurom.core.morphology import Morphology
 from neurom.core.population import Population
 from neurom.exceptions import NeuroMError
 from neurom.utils import warn_deprecated
-from neurom.io import neurolucida
-from neurom.io.datawrapper import DataWrapper
-from neurom.core.dataformat import COLS
-from functools import partial
+from neurom.io.multiSomas import MultiSoma
 
 L = logging.getLogger(__name__)
 
@@ -174,17 +171,7 @@ def load_morphology(morph, reader=None, somaType=None):
 def load_multiSoma(fname):
     ''' support of multi-soma .ASC files
     '''
-    print('Multi-soma is set True! Only .asc file is supported!')
-    neurons = neurolucida.read(fname, data_wrapper=DataWrapper)
-    pop_neurons = []
-    custom_data = []
-    for idx, rdw_ in enumerate(neurons):
-        if rdw_.data_block[0][COLS.TYPE] == 1:  ## somas
-            pop_neurons.append(rdw_.soma_points()) ## ndarray of soma points (n x 7)
-        else: ## ignore this part for now
-            custom_data.append(rdw_)
-
-    return pop_neurons, custom_data
+    return MultiSoma(fname)
 
 
 def load_neuron(morph, reader=None):
