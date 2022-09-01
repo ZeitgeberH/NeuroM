@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 import neurom as morphor_nm
+from neurom import features
+from neurom import morphmath as mm
+from neurom.core.types import NeuriteType
+from neurom.core.morphology import Section
 
 def getSomaStats(ps):
     ''' Basic statistics for soma
@@ -28,23 +32,42 @@ def minmaxDist(ps):
                 maxDia = diameter
     return maxDia
 
+def sec_len(n,sec):
+    """Return the length of a section."""
+    return mm.section_length(sec.points)
+
+def total_neurite_length(n):
+    '''Total neurite length (sections)'''
+    return sum(sec_len(n, s) for s in morphor_nm.iter_sections(n))
+
+def total_neurite_volume(n):
+    '''Total neurite volume'''
+    return sum(mm.segment_volume(s) for s in morphor_nm.iter_segments(n))
+
+def total_neurite_area(n):
+    '''Total neurite area'''
+    return sum(mm.segment_area(s) for s in morphor_nm.iter_segments(n))
+
+def total_bifurcation_points(n):
+    '''Number of bifurcation points'''
+    return sum(1 for _ in morphor_nm.iter_sections(n,
+                                          iterator_type=Section.ibifurcation_point))
+def max_branch_order(n):
+    '''Maximum branch order'''
+    return  max(features.section.branch_order(s) for s in morphor_nm.iter_sections(n))
+
+def sholl_analysis(n, step_size=10):
+    freq = features.morphology.sholl_frequency(n, neurite_type=NeuriteType.all, step_size=step_size, bins=None)
+    bins =  list(n.soma.radius + np.arange(len(freq))*step_size)
+    return freq, bins
+
 def extractMorhporFeatures(n, df_summary=None):
     ''' return a dataframe (formated as record) contains useful features
     n: NeuroM Neuron object
     '''
-    number_of_neurites = morphor_nm.get("number_of_neurites", n)
-    # Extract the total number of sections
-    number_of_sections = morphor_nm.get("number_of_sections", n)
-    # Extract the number of sections per neurite
-    number_of_sections_per_neurite = morphor_nm.get(
-        "number_of_sections_per_neurite", n
-    )
-    number_of_sections_per_neurite = morphor_nm.get(
-    "number_of_sections_per_neurite", n)
-
     if df_summary is None:
         df_summary = {}
-    maxDia, soma_center, soma_radius, soma_avgRadius = getSomaStats(n)
+    maxDia, soma_center, soma_radius, soma_avgRadius = getSomaStats(n.soma.points)
     df_summary["Neuron id"] = [n.name]
     df_summary["center X"] = [soma_center[0]]
     df_summary["center Y"] = [soma_center[1]]
@@ -53,13 +76,18 @@ def extractMorhporFeatures(n, df_summary=None):
     df_summary["maximal radius"] = [np.max(soma_radius)]
     df_summary["minimal radius"] = [np.min(soma_radius)]
     df_summary["maximal diameter"] = [maxDia]
-    df_summary["Number of neurite"] = [number_of_neurites[0]]
-    df_summary["Number of sections"] = [number_of_sections[0]]
-    for i, neurite in enumerate(n.neurites):
-        df_summary[str(neurite.type)] = [number_of_sections_per_neurite[i]]
-    # df = pd.DataFrame(df_summary)
-    df = pd.DataFrame.from_dict(df_summary, orient="index").transpose()
-    df = np.array(
-        df.to_records(index=False)
-    )  ## format dataframe for using in QtTable widget
-    return df
+    df_summary['max_radial_distance'] = [features.morphology.max_radial_distance(n)]
+    for neurite in n.neurites:
+        nsections = features.morphology.number_of_sections_per_neurite(n, neurite.type)
+        if len(nsections) > 1 :
+            for i in range(len(nsections)):
+                df_summary[str(neurite.type).split('.')[-1]+' segment'+str(i+1)] = [nsections[i]]
+        else:
+            df_summary[str(neurite.type)] = [nsections]
+    # neurite features
+    neurite_funcs = [total_neurite_length,total_neurite_volume,total_neurite_area,\
+        total_neurite_area,total_bifurcation_points,
+        max_branch_order]
+    for f in neurite_funcs:
+        df_summary[f.__doc__] = [f(n)]
+    return df_summary
