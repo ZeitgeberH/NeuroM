@@ -51,7 +51,7 @@ class MultiSoma(object):
         return distanceList
 
     def drawHulls(self, ax=None, contour_color='k',alpha=0.2, fill=True,\
-        contour_on=True, faceColor='g', contour_linewidth=2, labels=None):
+        contour_on=True, faceColor='g', contour_linewidth=2, labels=None,realistic_diameters=False):
         if ax is None:
             fig, ax = plt.subplots()
         if labels is None:
