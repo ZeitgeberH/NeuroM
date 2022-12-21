@@ -72,6 +72,6 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
     ],
-    use_scm_version={"local_scheme": "no-local-version"},
+    #use_scm_version={"local_scheme": "no-local-version"},
     setup_requires=['setuptools_scm'],
 )
