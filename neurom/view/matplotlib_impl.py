@@ -237,6 +237,12 @@ def plot_soma(soma, ax=None, plane='xy',
                                               [bounding_box[1][plane0], bounding_box[1][plane1]])),
                                    ignore=False)
 
+def rotate_contour(contour, angle):
+    """Rotate contour by angle in degrees."""
+    angle = np.deg2rad(-angle)
+    rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],
+                                [np.sin(angle), np.cos(angle)]])
+    return np.dot(contour, rotation_matrix)
 
 # pylint: disable=too-many-arguments
 @_implicit_ax
@@ -246,7 +252,7 @@ def plot_morph(morph, ax=None,
                soma_outline=True,
                diameter_scale=_DIAMETER_SCALE, linewidth=_LINEWIDTH,
                color=None, alpha=_ALPHA, realistic_diameters=False,scale_bar=True, contour_on=False,
-               contour_linewidth=0.1,contour_color='k'):
+               contour_linewidth=0.1,contour_color='k', rotationContour=0):
     """Plots a 2D figure of the morphology, that contains a soma and the neurites.
 
     Args:
@@ -268,6 +274,8 @@ def plot_morph(morph, ax=None,
     if contour_on: # draw contour if any
         for idx, x in enumerate(morph.markers):
             ps = np.array(x.points)
+            if rotationContour != 0:
+                ps = rotate_contour(ps[:,:2], rotationContour)
             ax.plot(ps[:,0],ps[:,1], linewidth=contour_linewidth, linestyle='--',color=contour_color,
                 label='contour_'+str(idx))       
     plot_soma(morph.soma, ax, plane=plane, soma_outline=soma_outline, linewidth=linewidth,
