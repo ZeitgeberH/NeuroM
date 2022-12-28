@@ -44,6 +44,7 @@ from neurom.morphmath import segment_radius
 from neurom.view.dendrogram import Dendrogram, get_size, layout_dendrogram, move_positions
 from neurom.view import matplotlib_utils
 from scipy.spatial import ConvexHull
+import matplotlib.patheffects as path_effects
 _LINEWIDTH = 1.2
 _ALPHA = 0.8
 _DIAMETER_SCALE = 1.0
@@ -187,7 +188,8 @@ def plot_tree(tree, ax=None, plane='xy',
             diameter_scale=diameter_scale,
             linewidth=linewidth,
         )
-        collection = LineCollection(segs, colors=colors, linewidth=linewidth, alpha=alpha)
+        collection = LineCollection(segs, colors=colors, linewidth=linewidth, alpha=alpha,
+        path_effects=[path_effects.Stroke(capstyle="round",joinstyle='round')])
 
     ax.add_collection(collection)
 
