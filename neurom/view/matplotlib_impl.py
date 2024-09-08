@@ -31,6 +31,7 @@
 from functools import wraps
 import numpy as np
 from matplotlib.collections import LineCollection, PatchCollection
+import matplotlib.transforms as mtransforms
 import matplotlib.offsetbox as offsetbox
 from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, FancyArrowPatch, Polygon, Rectangle
@@ -45,7 +46,7 @@ from neurom.view.dendrogram import Dendrogram, get_size, layout_dendrogram, move
 from neurom.view import matplotlib_utils
 from scipy.spatial import ConvexHull
 import matplotlib.patheffects as path_effects
-_LINEWIDTH = 1.2
+_LINEWIDTH = 1.0
 _ALPHA = 0.8
 _DIAMETER_SCALE = 1.0
 TREE_COLOR = {NeuriteType.basal_dendrite: 'blue',
@@ -121,8 +122,8 @@ def _get_linewidth(tree, linewidth, diameter_scale):
     If diameter_scale is None, the linewidth is used.
     """
     if diameter_scale is not None and tree:
-        linewidth = [2 * segment_radius(s) * diameter_scale
-                     for s in iter_segments(tree)]
+        linewidth = [segment_radius(s) * diameter_scale
+                     for s in iter_segments(tree)] ## neuroludica v3 use diameter instead of radius
     return linewidth
 
 
@@ -136,7 +137,8 @@ def _get_color(treecolor, tree_type):
 @_implicit_ax
 def plot_tree(tree, ax=None, plane='xy',
               diameter_scale=_DIAMETER_SCALE, linewidth=_LINEWIDTH,
-              color=None, alpha=_ALPHA, realistic_diameters=False):
+              color=None, alpha=_ALPHA, realistic_diameters=False, enhanceBifurcationPlotting=True,
+              DiameterScaling=2.0):
     """Plots a 2d figure of the tree's segments.
 
     Args:
@@ -155,50 +157,62 @@ def plot_tree(tree, ax=None, plane='xy',
     """
     plane0, plane1 = _plane2col(plane)
 
-    section_segment_list = [(section, segment)
+    section_segment_list = [(section, segment, len(section.children)>=2)
                             for section in iter_sections(tree)
                             for segment in iter_segments(section)]
-    colors = [_get_color(color, section.type) for section, _ in section_segment_list]
+    colors = [_get_color(color, section.type) for section, _, _ in section_segment_list]
+    segs = [((seg[0][plane0], seg[0][plane1]),
+                (seg[1][plane0], seg[1][plane1]))
+            for _, seg, _ in section_segment_list]
 
-    if realistic_diameters:
-        def _get_rectangle(x, y, linewidth):
-            """Draw  a rectangle to represent a secgment."""
-            x, y = np.array(x), np.array(y)
-            diff = y - x
-            angle = np.arctan2(diff[1], diff[0]) % (2 * np.pi)
-            return Rectangle(x - linewidth / 2. * np.array([-np.sin(angle), np.cos(angle)]),
-                             np.linalg.norm(diff),
-                             linewidth,
-                             np.rad2deg(angle))
-
-        segs = [_get_rectangle((seg[0][plane0], seg[0][plane1]),
-                               (seg[1][plane0], seg[1][plane1]),
-                               2 * segment_radius(seg) * diameter_scale)
-                for _, seg in section_segment_list]
-
-        collection = PatchCollection(segs, alpha=alpha, facecolors=colors)
-
-    else:
-        segs = [((seg[0][plane0], seg[0][plane1]),
-                 (seg[1][plane0], seg[1][plane1]))
-                for _, seg in section_segment_list]
-
-        linewidth = _get_linewidth(
-            tree,
-            diameter_scale=diameter_scale,
-            linewidth=linewidth,
-        )
-        collection = LineCollection(segs, colors=colors, linewidth=linewidth, alpha=alpha,
-        path_effects=[path_effects.Stroke(capstyle="round",joinstyle='round')])
-
+    linewidth = _get_linewidth(
+        tree,
+        diameter_scale=DiameterScaling,
+        linewidth=linewidth)
+    collection = LineCollection(segs, colors=colors, linewidth=linewidth, alpha=alpha,
+     path_effects=[path_effects.Stroke(capstyle="round",joinstyle='round')])  
+    # trans = mtransforms.Affine2D().scale(1.0) + ax.transData
+    # collection.set_transform(trans)  
     ax.add_collection(collection)
+    if enhanceBifurcationPlotting:
+        bifurcation_transition(section_segment_list, colors, ax) 
 
 
+def bifurcation_transition(section_segment_list, colors, ax):
+    """Enhance the plotting of bifurcations by plotting a polygon around the bifurcation point"""
+    for (bif_point, _, isbif), color in zip(section_segment_list, colors):
+        if isbif:
+            parent_points = np.array(bif_point.points[-1,:])
+            for child in bif_point.children:
+                child_points = np.array(child.points[1,:])
+                plot_polygon(parent_points, child_points, color, ax)
+
+@_implicit_ax                
+def plot_polygon(p1, p2, color, ax=None):
+    """Plots a polygon"""
+    if np.abs(p1[COLS.R]-p2[COLS.R]) < 0.05:
+        return
+    p1a, p1b = orthognal_points(p1[:2],p2[:2], p1[COLS.R])
+    p1c, p1d = orthognal_points(p2[:2],p1[:2], p2[COLS.R])
+    ## matplotlib draw a polygon
+    ax.fill([p1a[0], p1b[0], p1c[0], p1d[0]], [p1a[1], p1b[1], p1c[1], p1d[1]],
+    linewidth=0.1,color=color, alpha=1.0,antialiased=True)
+
+def orthognal_points(p1,p2,x):
+    """Returns the coordinates of two points orthogonal to the line formed by points p1 and p2 with distance x
+    scale is used to scale the distance between the end points"""
+    v = p2-p1
+    v = v/np.sqrt(np.sum(v**2))
+    v = np.array([-v[1],v[0]])
+    p3 = p1 + x*v
+    p4 = p1 - x*v
+    return p3, p4
+    
 @_implicit_ax
 def plot_soma(soma, ax=None, plane='xy',
               soma_outline=True,
               linewidth=_LINEWIDTH,
-              color=None, alpha=_ALPHA):
+              color=None, alpha=_ALPHA, DiameterScaling=2.0):
     """Generates a 2d figure of the soma.
 
     Args:
@@ -216,10 +230,25 @@ def plot_soma(soma, ax=None, plane='xy',
         plane0, plane1 = _plane2col(plane)
         points = np.vstack([soma.points[:,plane0].ravel(),
                             soma.points[:,plane1].ravel()])
-        points = points.T
-        hull = ConvexHull(points)
-        ax.add_patch(Polygon(points[hull.vertices], fill=True, color=color, alpha=alpha,\
+        
+        try:
+            points = points.T
+            hull = ConvexHull(points)
+            ax.add_patch(Polygon(points[hull.vertices], fill=True, color=color, alpha=alpha,\
             zorder=-1))
+        except Exception as e:
+            # print('ConvexHull failed for soma with points: {}'.format(points), e)
+            points = np.column_stack([points[:,0], points[:,1]])
+            if DiameterScaling >= 1.0:
+                lw = soma.radius
+            else:
+                lw = soma.radius/2
+            collection = LineCollection([points], colors=color, linewidth=lw, alpha=alpha,
+            path_effects=[path_effects.Stroke(capstyle="round",joinstyle='round')])  
+            # trans = mtransforms.Affine2D().scale(1.0) + ax.transData
+            # collection.set_transform(trans)  
+            ax.add_collection(collection)
+
     else:
         if soma_outline:
             ax.add_artist(Circle(soma.center[[plane0, plane1]], soma.radius,
@@ -254,7 +283,8 @@ def plot_morph(morph, ax=None,
                soma_outline=True,
                diameter_scale=_DIAMETER_SCALE, linewidth=_LINEWIDTH,
                color=None, alpha=_ALPHA, realistic_diameters=False,scale_bar=True, contour_on=False,
-               contour_linewidth=0.1,contour_color='k', rotationContour=0):
+               contour_linewidth=0.1,contour_color='k', rotationContour=0,enhanceBifurcationPlotting=True,
+               neutriteColors=None, DiameterScaling=2.0):
     """Plots a 2D figure of the morphology, that contains a soma and the neurites.
 
     Args:
@@ -273,20 +303,30 @@ def plot_morph(morph, ax=None,
         contour_linewidth(float): default 0.1
         contour_color(str): default 'k'
     """
+    if neutriteColors is not None: # if neutriteColors is not None, update TREE_COLOR
+        for k in neutriteColors: 
+            TREE_COLOR[k] = neutriteColors[k]
     if contour_on: # draw contour if any
         for idx, x in enumerate(morph.markers):
             ps = np.array(x.points)
             if rotationContour != 0:
                 ps = rotate_contour(ps[:,:2], rotationContour)
             ax.plot(ps[:,0],ps[:,1], linewidth=contour_linewidth, linestyle='--',color=contour_color,
-                label='contour_'+str(idx))       
-    plot_soma(morph.soma, ax, plane=plane, soma_outline=soma_outline, linewidth=linewidth,
-              color=color, alpha=alpha)
+                label='contour_'+str(idx))    
+    if len(morph.soma.points) >0:
+        try:
+            plot_soma(morph.soma, ax, plane=plane, soma_outline=soma_outline, linewidth=linewidth,
+                    color=color, alpha=alpha, DiameterScaling=DiameterScaling)
+        except Exception as e:
+            print('Soma failed to plot: ', e)
+    else:
+        print('No soma found')
 
     for neurite in iter_neurites(morph, filt=tree_type_checker(neurite_type)):
         plot_tree(neurite, ax, plane=plane,
                   diameter_scale=diameter_scale, linewidth=linewidth,
-                  color=color, alpha=alpha, realistic_diameters=realistic_diameters)
+                  color=color, alpha=alpha, realistic_diameters=realistic_diameters,
+                  enhanceBifurcationPlotting=enhanceBifurcationPlotting, DiameterScaling=DiameterScaling)
     if scale_bar:
         ob = AnchoredHScaleBar(size=50, extent = 0.01, label="50 um", loc=4, frameon=False,
                         pad=0.6,sep=4, linekw=dict(color="black"),ax=ax) 
